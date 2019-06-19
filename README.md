@@ -3,8 +3,8 @@
 * frontend - vuejs
 
 ## run and build
-  1. install
-    > backend$ npm install
+  1. installs
+    >backend$ npm install
     >frontend$ npm install
   2. vue build
 	  >frontend$ npm run build
