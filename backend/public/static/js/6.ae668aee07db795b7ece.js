@@ -1,0 +1,2 @@
+webpackJsonp([6],{"0Kyw":function(e,t,n){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var r={render:function(){var e=this.$createElement;return(this._self._c||e)("div")},staticRenderFns:[]},s=n("VU/8")({created:function(){var e=this;this.$store.dispatch("destroyToken").then(function(t){e.$router.push({name:"Login"})}).catch(function(t){e.$router.push({name:"Login"})})}},r,!1,null,null,null);t.default=s.exports}});
+//# sourceMappingURL=6.ae668aee07db795b7ece.js.map

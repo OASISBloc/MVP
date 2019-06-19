@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<title>OASISBloc demo</title>
+	<link rel="shortcut icon" href="/demo/img/oasis_favicon.ico">
+	<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900&display=swap" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="/demo/css/common.css">
+	<script type="text/javascript" src="/demo/js/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" src="/demo/js/jquery.easing.1.3.js"></script>
+	<script type="text/javascript" src="/demo/js/circleChart.min.js"></script>
+	<script type="text/javascript" src="/demo/js/common.js"></script>
+</head>
+<script>
+	$(function() {
+		
+	});
+
+	function changeName() {
+		// $("#userName").val()
+		$("[name='changeName']").text($("#userName").val());
+	}
+
+	var globalTxid = '';
+	var menuArr = {
+		'dinnerMenu01': 'Cheese burger', 
+		'dinnerMenu02': 'Pork cutlet', 
+		'dinnerMenu03': 'Chicken wings ding', 
+		'dinnerMenu04': 'Shanghai kung pao chicken', 
+		'dinnerMenu05': 'Chicken stew', 
+		'dinnerMenu06': 'Bibimbob'
+	}
+	
+	// 메뉴 선택 후 다음 (데이터 등록 및 구매 처리)
+	function menuNextStep() {
+		console.log("menuNextStep start");
+		console.log("ID :: ", $(".menu-on").attr("id"));
+		var menu = $(".menu-on").attr("id");
+
+		$.ajax({
+			url: '/demo/addFoodData',
+			data: {menuName: menuArr[menu]},
+			type: 'POST',
+			dataType: 'json',
+			success: function(data){
+				globalTxid = data.txid;
+				$("#txid1").text(globalTxid);
+				$("#txid1").attr("href", "http://finder.oasisbloc.io/search?q=" + globalTxid);
+				$("#txid2").attr("href", "http://finder.oasisbloc.io/search?q=" + globalTxid);
+			}
+			, error: function(error) {
+				//alert('Error occurred.');
+			}
+		});
+	}
+
+	var randomCnt = 0;
+
+	function buyFoodData() {
+		console.log("======= buyFoodData");
+		$.ajax({
+			url: '/demo/buyFoodData',
+			type: 'POST',
+			dataType: 'json',
+			success: function(data){
+				randomCnt = data.randomCnt;
+				console.log("buyFoodData randomCnt :: " + randomCnt);
+			}
+			, error: function(error) {
+				//alert('Error occurred.');
+			}
+		});
+	}
+
+	function buyFoodDataHistory() {
+		$.ajax({
+			url: '/demo/buyFoodDataHistory',
+			type: 'POST',
+			dataType: 'json',
+			success: function(data){
+				console.log("history :: ", data);
+				$("#rewardHistories").empty();
+
+				var rewardCnt = randomCnt + 1;	// 한번 테스트 할때 보여줄 건수 (데이터 등록, 구매 트랜젝션 개수 (randomCnt: 구매횟수, +1: 등록)  )
+				$("#tranCnt").text(rewardCnt);
+				$("#totAmt").text(data.tokenAmt);
+				
+				var _historyHtml = ""
+				var tranList = data.rows;
+				var totSalesPrice = parseFloat(0).toFixed(4);
+				for (var i = 0; i < rewardCnt; i++) {
+
+					_historyHtml += "<li>";
+					_historyHtml += "	<dl>";
+					var tranType = "";
+
+					if (tranList[i][4] == "adddata") {
+						tranType = "Data added";
+					} else {
+						tranType = "Data sales";
+					}
+					_historyHtml += "		<dt>" + tranType + "</dt>";				// 데이터 등록, 구매 타입
+					_historyHtml += "		<dd class='date'>" + tranList[i][3] + "</dd>";	// 시간
+					_historyHtml += "		<dd class='txid'>";
+					_historyHtml += "			<a href='http://finder.oasisbloc.io/search?q=" + tranList[i][2] + "' target='_blink'>" + tranList[i][2] + "</a>";	// txid
+					_historyHtml += "		</dd>";
+					_historyHtml += "		<dd class='fdt'>";
+
+					var tmpSalePrice = parseFloat(0).toFixed(4);
+					if (i == (rewardCnt -1)) {
+						tmpSalePrice = parseFloat(0.0025).toFixed(4);
+					} else {
+						tmpSalePrice = parseFloat(random(1, 5)).toFixed(4);
+					}
+					totSalesPrice = (parseFloat(totSalesPrice) + parseFloat(tmpSalePrice)).toFixed(4);
+					_historyHtml += "			" + tmpSalePrice + " <span>FDT</span>";
+					_historyHtml += "		</dd>";
+					_historyHtml += "	</dl>";
+					_historyHtml += "</li>";
+				}
+				var samTotal = (parseFloat(totSalesPrice) - parseFloat(0.0025)).toFixed(4);
+				$("#rewardHistories").append(_historyHtml);
+				$("#samTotal").text(samTotal);
+				$("#samAllTotal").text(parseFloat(totSalesPrice));
+				$("#foodTotal").text((samTotal * 100).toFixed(4));
+			}
+			, error: function(error) {
+				// alert('Error occurred.');
+			}
+		});
+	}
+
+	function random(min, max) {
+		return Math.floor(Math.random() * (max - min)) + min;
+	}
+</script>
+<body>
+
+	<!-- header -->
+	<header>
+		<div class="header-in">
+
+			<h1>OASISBloc <em>Demo</em></h1>
+			<a href="#n" class="btn-nav">menu</a>
+			<nav>
+				<ul>
+					<li><a href="#collection">Data collection</a></li>
+					<li><a href="#registration">Data registration</a></li>
+					<li><a href="#distribution">Data distribution</a></li>
+					<li><a href="#service">Service</a></li>
+					<li><a href="#rewards">Rewards</a></li>
+				</ul>
+				<a href="#n" class="btn-cls">close</a>
+			</nav>
+
+		</div>
+	</header>
+	<!-- //header -->
+
+	<!-- container -->
+	<section class="container">
+		<div class="container-in">
+
+			<!-- home -->
+			<article class="home-area" id="home">
+
+				<div class="section01">
+					<h2 class="tit">OASISBloc</h2>
+					<p class="tit-desc">Blockchain-based data trading platform</p>
+					<div class="img-desc">
+						<img src="/demo/img/visual.png" alt="OASISBloc - Blockchain-based data trading platform">
+						<ul class="ico-text">
+							<li>Request data</li>
+							<li>Provide data</li>
+							<li>Domain Chain</li>
+						</ul>
+					</div>
+					<ul class="desk-list">
+						<li>Blockchain-based data trading and data management</li>
+						<li>Clearly managing data ownership and data distribution</li>
+						<li>Fair reward for data usages</li>
+						<li>Create new services by converging heterogeneous data</li>
+					</ul>
+				</div>
+
+				<div class="section02">
+					<p class="start-msg">To experience from efficient data collection to fair rewards for data owners, <strong>Try the OASISBloc demo!</strong></p>
+					<input type="text" class="name-get" id="userName" placeholder="Enter your name">
+					<a href="#n" class="btn-start-demo" onclick="changeName()">Start Demo</a>
+					<div class="step-ready">
+						<p>Hi <em class="name"></em>,<span>Let’s start with the Data collection process!</span></p>
+						<a href="#collection" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyFoodDiary');},800);">Next step</a>
+					</div>
+				</div>
+				<script type="text/javascript">
+					$('.btn-start-demo').on('click', function(){
+						var usrName = $('.name-get').val();
+						if(usrName !== ''){
+							$('.name-blind').show();
+							$('.step-ready').fadeIn().find('.name').text(usrName);
+						}
+					});
+				</script>
+	
+			</article>
+			<!-- //home -->
+
+			<!-- Data collection -->
+			<article class="collection-area" id="collection">
+
+				<!-- default-kcal -->
+				<div class="default-kcal">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p class="name-blind" style="display:none;">Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="default">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>824</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current = 891;
+									function pieDefault(){
+										$(".circle-chart#default").circleChart({
+											size: 188,
+											value: 0,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(0);
+											}
+										});
+									}
+									pieDefault();
+									function pieDefault2(){
+										$(".circle-chart#default").circleChart({
+											value: (current / full) * 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0101.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0102.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0103.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" onclick="popupOpen('#lyMenuSelect');">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Proper amount : 429 - 600</span>
+								</div>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#n" class="btn-next-step" onclick="menuNextStep()">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- default -->
+
+				<!-- cheese burger kcal : 메뉴 선택 팝업에서 cheese burger 선택시 노출-->
+				<div class="cheese-burger-kcal" id="dinnerMenu01">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner01">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>1143</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current01 = 572;
+									function pieDinner01(){
+										$("#chartDinner01").circleChart({
+											size: 188,
+											value: (current01 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0201.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0202.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0203.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Cheese burger</span>
+								</div>
+								<strong class="kcal"><em>319</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep();">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- cheese burger kcal -->
+
+				<!-- pork cutlet kcal : 메뉴 선택 팝업에서 Pork cutlet 선택시 노출-->
+				<div class="pork-cutlet-kcal" id="dinnerMenu02">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner02">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>1035</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current02 = 680;
+									function pieDinner02(){
+										$("#chartDinner02").circleChart({
+											size: 188,
+											value: (current02 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0301.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0302.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0303.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Pork cutlet</span>
+								</div>
+								<strong class="kcal"><em>211</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep()">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- pork cutlet kcal -->
+
+				<!-- Chicken wings ding kcal : 메뉴 선택 팝업에서 Chicken wings ding 선택시 노출-->
+				<div class="chicken-wings-ding-kcal" id="dinnerMenu03">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner03">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>994</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current03 = 721;
+									function pieDinner03(){
+										$("#chartDinner03").circleChart({
+											size: 188,
+											value: (current03 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0401.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0402.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0403.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Chicken wings ding</span>
+								</div>
+								<strong class="kcal"><em>170</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep();">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- Chicken wings ding kcal -->
+
+				<!-- Shanghai kung pao chicken kcal : 메뉴 선택 팝업에서 Shanghai kung pao chicken 선택시 노출-->
+				<div class="shanghai-kung-pao-chicken-kcal" id="dinnerMenu04">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner04">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>1424</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current04 = 219;
+									function pieDinner04(){
+										$("#chartDinner04").circleChart({
+											size: 188,
+											value: (current04 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0501.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0502.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0503.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Shanghai kung pao chicken</span>
+								</div>
+								<strong class="kcal"><em>600</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep()">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- Shanghai kung pao chicken kcal -->
+
+				<!-- Chicken stew kcal : 메뉴 선택 팝업에서 Chicken stew 선택시 노출-->
+				<div class="chicken-stew-kcal" id="dinnerMenu05">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner05">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>1278</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current05 = 437;
+									function pieDinner05(){
+										$("#chartDinner05").circleChart({
+											size: 188,
+											value: (current05 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0601.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0602.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0603.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Chicken stew</span>
+								</div>
+								<strong class="kcal"><em>454</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep();">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- Chicken stew kcal -->
+
+				<!-- Bibimbob kcal : 메뉴 선택 팝업에서 Bibimbob 선택시 노출-->
+				<div class="bibimbob-kcal" id="dinnerMenu06">
+					<div class="tit-section">
+						<h2>Food diary</h2>
+						<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+					</div>
+
+					<div class="today-kacl">
+						<dl>
+							<dt>Today</dt>
+							<dd class="pie">
+								<!-- circle chart -->
+								<div class="circle-chart" id="chartDinner06">
+									<div class="text">
+										<span class="amount">/ 1715</span>
+										<p class="desc">Calorie remaining</p>
+										<span class="intaked">Intaked: <em>1410</em></span>
+									</div>
+								</div>
+								<!-- //circle chart -->
+								<script>
+									var full = 1715;
+										current06 = 305;
+									function pieDinner06(){
+										$("#chartDinner06").circleChart({
+											size: 188,
+											value: (current06 / full) * 100,
+											text: 0,
+											widthRatio: 0.12,
+											color: "#fda050",
+											backgroundColor: "#e5e5e5",
+											startAngle: 175,
+											cAngle: 100,
+											onDraw: function(el, circle) {
+												circle.text(Math.round(circle.value * (full / 100)));
+											}
+										});
+									}
+								</script>
+							</dd>
+							<dd class="bar">
+								<ul>
+									<li><img src="/demo/img/today_kcal_line0701.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0702.png" alt=""></li>
+									<li><img src="/demo/img/today_kcal_line0703.png" alt=""></li>
+								</ul>
+							</dd>
+						</dl>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyFoodDiary');">info</a>
+					</div>
+
+					<ul class="today-kcal-list">
+						<li class="breakfast">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Breakfast</strong>
+									<span>Club sandwich</span>
+								</div>
+								<strong class="kcal"><em>549</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="lunch">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Lunch</strong>
+									<span>Cream pasta</span>
+								</div>
+								<strong class="kcal"><em>275</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="dinner">
+							<a href="#n" class="complete">
+								<div class="txt">
+									<strong>Dinner</strong>
+									<span>Bibimbob</span>
+								</div>
+								<strong class="kcal"><em>586</em> Calorie</strong>
+							</a>
+						</li>
+						<li class="snack">
+							<a href="#n" class="disabled">
+								<div class="txt">
+									<strong>Snack</strong>
+									<span>Proper amount : 0 - 343</span>
+								</div>
+							</a>
+						</li>
+					</ul>
+
+					<a href="#diabetesDiary" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDiabetesDiary');},800);menuNextStep();">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- Bibimbob kcal -->
+
+				<!-- diabetes diary : 당뇨병 관리 다이어리 -->
+				<div class="diabetes-diary" id="diabetesDiary">
+					<div class="tit-section">
+						<h2>Diabetes diary</h2>
+					</div>
+
+					<div class="cont-section">
+						<h3 class="tit-user">Hello, <strong class="user-name">Carol</strong></h3>
+						<a href="#n" class="btn-info" onclick="popupOpen('#lyDiabetesDiary');">info</a>
+						<p class="img-wrap"><img src="/demo/img/img_density.png" alt=""></p>
+						<h4>Weekly insight</h4>
+						<p class="img-wrap"><img src="/demo/img/img_weekly_insight.png" alt=""></p>
+					</div>
+
+					<a href="#registration" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyRegistration');},800);">Next step</a><!-- slide target class : slide -->
+				</div>
+				<!-- diabetes-diary -->
+
+			</article>
+			<!-- //Data collection -->
+
+			<!-- Data registration -->
+			<article class="registration-area" id="registration">
+
+				<div class="tit-section">
+					<h2>Food diary</h2>
+					<p>Hi, <strong class="user-name"><em name="changeName">Sam</em></strong></p>
+				</div>
+
+				<div class="cont-section">
+					<h3>OASISBloc explore</h3>
+					<a href="#n" class="btn-info" onclick="popupOpen('#lyRegistration');">info</a>
+					<p class="img-wrap"><img src="/demo/img/img_registration.png" alt=""></p>
+					<p class="txid">
+						<strong class="user-name"><em name="changeName">Sam</em>’s</strong> dietary data ID(TxID) is 
+						<a href="http://finder.oasisbloc.io/search?q=9893b449f2e2f9e868fd1f2a869bb86ae6718af5138e58d76bf561245a40ae52" id="txid1" target="_blink">9893b449f2e2f9e868fd1f2a869bb86ae6718af5138e58d76bf561245a40ae52.</a>
+					</p>
+					<p class="msg">Let's go to Explorer and see<br>if the data has saved securely.</p>
+					<div class="btn-area">
+						<a href="http://finder.oasisbloc.io/search?q=9893b449f2e2f9e868fd1f2a869bb86ae6718af5138e58d76bf561245a40ae52" id="txid2" target="_blink">Go to explore</a>
+					</div>
+				</div>
+
+				<a href="#distribution" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyDistribution01');},800);">Next step</a><!-- slide target class : slide -->
+				
+			</article>
+			<!-- //Data registration -->
+
+			<!-- Data distribution -->
+			<article class="distribution-area" id="distribution">
+
+				<div class="info-wrap">
+					<p class="desc">Provision of data request and data</p>
+					<p class="img-wrap"><img src="/demo/img/img_distribution.png" alt=""></p>
+					
+					<a href="#n" class="btn-info btn-distribution01" onclick="popupOpen('#lyDistribution01');">info</a>
+					<a href="#n" class="btn-info btn-distribution02" onclick="popupOpen('#lyDistribution02');">info</a>
+					<a href="#n" class="btn-info btn-distribution03" onclick="popupOpen('#lyDistribution03');">info</a>
+					<a href="#n" class="btn-info btn-distribution04" onclick="popupOpen('#lyDistribution04');">info</a>
+					<a href="#n" class="btn-info btn-distribution05" onclick="popupOpen('#lyDistribution05');">info</a>
+				</div>
+
+				<a href="#service" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyService');},800);buyFoodData();">Next step</a><!-- slide target class : slide -->
+
+			</article>
+			<!-- //Data distribution -->
+
+			<!-- Service -->
+			<article class="service-area" id="service">
+
+				<div class="tit-section">
+					<h2>My health service</h2>
+				</div>
+
+				<div class="cont-section">
+					<h3 class="tit-user">Hello, <strong class="user-name" name="changeName">Sam</strong></h3>
+					<a href="#n" class="btn-info" onclick="popupOpen('#lyService');">info</a>
+
+					<div class="box-area">
+						<h4>Diagnosis of obesity index</h4>
+						<p class="obesity-msg">Average calories consumption (1 day) : 5,000 kcal</p>
+						<p class="img-wrap"><img src="/demo/img/img_obesity.png" alt="" width="246"></p>
+						<h4>Daily target</h4>
+						<p class="img-wrap"><img src="/demo/img/img_daily_target.png" alt="" width="246"></p>
+					</div>
+
+					<div class="box-area">
+						<h4>Weekly target</h4>
+						<div class="pie_chart" style="width:246px;height:123px;">
+							<span class="pie_num"><em>25%</em></span><!-- 챠트 수치 : 입력값만큼 모션 (화면상 보이지 않음) -->
+							<span class="pie_graph"></span>
+							<span class="gauge">
+								<span class="num0">0</span>
+								<span class="num1">0.025</span>
+								<span class="num2">0.05</span>
+								<span class="num3">0.075</span>
+								<span class="num4">0.1</span>
+							</span>
+							<p class="msg">Cheer up!</p>
+						</div>
+						<script>
+							function pieGraph(){
+								var pieNum = parseInt($('.pie_chart .pie_num').text());
+								var now = pieNum * 1.8;
+								var rotate = 0;
+								setInterval(function(){
+									if(now <= 180){
+										if(rotate <= now && rotate <= 180){
+											$(".pie_chart .pie_graph").css('transform','rotate(' + rotate + 'deg)');
+											rotate = rotate + 1;
+										}	
+									}else{
+										if(rotate <= 180){
+											$(".pie_chart .pie_graph").css('transform','rotate(' + rotate + 'deg)');
+											rotate = rotate + 1;
+										}	
+									}
+								}, 8);
+							}
+							var paused = false;
+							$(window).on('scroll', function() {   
+								var pos = $(this).scrollTop();  
+								var offset = $('.pie_chart').offset().top;
+								var clientH = document.documentElement.clientHeight;
+								var headerH = $('header').height();
+								setTimeout(function(){
+									if(pos >= offset - (clientH - 130)){
+										if( !paused ){
+											pieGraph();
+											paused = true;
+										}
+									}
+								},300)
+							});
+						</script>
+
+						<h4>Weekly rewards</h4>
+						<p class="img-wrap"><img src="/demo/img/img_weekly_rewards.png" alt="" width="246"></p>
+					</div>
+
+					<h4 class="mt10">Recommend</h4>
+					<div class="recommend-wrap">
+						<ul class="use-token">
+							<li><img src="/demo/img/img_sld_temp01.png" alt="" width="94"></li>
+							<li><img src="/demo/img/img_sld_temp02.png" alt="" width="94"></li>
+						</ul>
+						<a href="#n" class="btn-prev">prev</a>
+						<a href="#n" class="btn-next">next</a>
+					</div>
+				</div>
+				
+				<a href="#rewards" class="btn-next-step slide" onclick="setTimeout(function(){popupOpen('#lyRewards');},800);buyFoodDataHistory();">Next step</a><!-- slide target class : slide -->
+
+			</article>
+			<!-- //Service -->
+
+			<!-- Rewards -->
+			<article class="rewards-area" id="rewards">
+
+				<div class="tit-section">
+					<h2>My reward</h2>
+					<p>Hi, <strong class="user-name" name="changeName">Sam</strong></p>
+				</div>
+				
+				<div class="data-box">
+
+					<a href="#n" class="btn-info" onclick="popupOpen('#lyRewards');">info</a>
+	
+					<ul class="reward-token">
+						<li class="no">
+							<strong class="num" id="tranCnt">5</strong>
+							<span>No. of total <br>rewards</span>
+						</li>
+						<li class="amount">
+							<strong class="num"><em id="totAmt">4500.0000</em> FDT</strong>
+							<span>Total reward <br>amount</span>
+						</li>
+					</ul>
+
+					<h3>My reward history</h3>
+					<ul class="reward-history" id="rewardHistories">
+						
+					</ul>
+
+					<h3>Data transaction reward</h3>
+					<h4>Data provider</h4>
+					<div class="tbl">
+						<table>
+							<colgroup>
+								<col style="width:60%;">
+								<col style="width:40%;">
+							</colgroup>
+							<caption>Data provider</caption>
+							<thead>
+								<tr>
+									<th>Subject</th>
+									<th>Subject</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td><span class="user-name"><em name="changeName">Sam</em></span> (Data provider)</td>
+									<td class="tar">+ 0.0025 <span class="txt-orange">FDT</span></td>
+								</tr>
+								<tr>
+									<td>Carol (Data provider)</td>
+									<td class="tar">+ 0.0023 <span class="txt-sky">MAT</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<h4>Data sales result</h4>
+					<div class="tbl">
+						<table>
+							<colgroup>
+								<col style="width:60%;">
+								<col style="width:40%;">
+							</colgroup>
+							<caption>Data sales result</caption>
+							<thead>
+								<tr>
+									<th>Subject</th>
+									<th>Reward</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Food diary (Domain chain)</td>
+									<td class="tar"><em id="foodTotal">20.0000</em> <span class="txt-orange">FDT</span></td>
+								</tr>
+								<tr>
+									<td>Diabetes diary (Domain chain)</td>
+									<td class="tar">32.0000 <span class="txt-sky">MAT</span></td>
+								</tr>
+								<tr class="bg-grn">
+									<td><span class="user-name"><em name="changeName">Sam</em></span> (Data provider)</td>
+									<td class="tar"><em id="samTotal">0.002</em> <span class="txt-orange">FDT</span></td>
+								</tr>
+								<tr class="bg-grn">
+									<td>Carol (Data provider)</td>
+									<td class="tar">0.0001 <span class="txt-sky">MAT</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<p class="tbl-msg txt-orange"><span class="bu">※</span>Distribute rewards for data provision from revenue generated by sales</p>
+				</div>
+
+				<div class="total-revenue">
+					<h3>Total revenue</h3>
+					<ul class="revenue-list">
+						<li>
+							<strong class="fdt"><em id="samAllTotal">0.0026</em> FDT</strong>
+							<span class="txt"><em name="changeName">Sam</em>’s total <br>revenue</span>
+						</li>
+						<li>
+							<strong class="fdt">0.0024 MAT</strong>
+							<span class="txt">Carol’s total <br>revenue</span>
+						</li>
+					</ul>
+				</div>
+
+				<div class="last-msg">
+					<p>You have experienced the demo version of<br>
+						OASISBloc’s smart data distribution.</p>
+					<p class="mt20">For any further questions, please contact<br>
+						<a href="javascript:;">support@oasisbloc.io</a> and we will get<br>
+						back to you.</p>
+					<strong class="thank-you">Thank you.</strong>
+				</div>
+
+			</article>
+			<!-- //Rewards -->
+
+		</div>
+
+		<a href="#n" class="btn-top">Top</a>
+
+	</section>
+	<!-- //container -->
+
+	<!-- footer -->
+	<footer>
+
+		<p class="copyright">© 2019 Foundation OASIS LTD.</p>
+
+	</footer>
+	<!-- //footer -->
+
+
+
+
+
+	
+
+	
+
+
+
+<!-- layer : menu select -->
+<div class="ly-wrap">
+	<div class="ly-popup menu-select" id="lyMenuSelect">
+		<div class="ly-inner">
+			<h3 class="pop-tit">What did you have for dinner?</h3>
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<!-- tab btn -->
+				<ul class="tabmenu" id="tabActive01">
+					<li class="on"><a href="#tabCont0101">Western</a></li>
+					<li><a href="#tabCont0102">Chinese</a></li>
+					<li><a href="#tabCont0103">Korean</a></li>
+				</ul>
+				<!-- //tab btn -->
+		
+				<!-- tab wrap -->
+				<div class="tab-wrap type01" id="tabWrap01">
+		
+					<!-- Western -->
+					<div class="tab-cont" id="tabCont0101">
+						
+						<div class="scroll-box">
+							<ul class="menu-chk-list">
+								<li>
+									<label>
+										<input type="radio" name="western-chk" class="menuChk01">
+										<span class="text cheese-burger">Cheese burger</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="western-chk" class="menuChk02">
+										<span class="text pork-cutlet">Pork Cutlet</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="western-chk" disabled>
+										<span class="text">Meatball spaghetti</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="western-chk" disabled>
+										<span class="text">Margherita Pizza</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="western-chk" disabled>
+										<span class="text">Mushroom risotto</span>
+									</label>
+								</li>
+							</ul>
+						</div>
+
+						<div class="btn-area">
+							<button type="button" class="btn-menu-select btn-ok" disabled>OK</button>
+						</div>
+
+					</div>
+					<!-- //Western -->
+		
+					<!-- Chinese -->
+					<div class="tab-cont" id="tabCont0102">
+
+						<div class="scroll-box">
+							<ul class="menu-chk-list">
+								<li>
+									<label>
+										<input type="radio" name="chinese-chk" class="menuChk03">
+										<span class="text chicken-wings-ding">Chicken wings ding</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="chinese-chk" class="menuChk04">
+										<span class="text shanghai-kung-pao-chicken">Shanghai kung pao chicken</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="chinese-chk" disabled>
+										<span class="text">Vegetable shanghai noodle</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="chinese-chk" disabled>
+										<span class="text">Seafood lo mein</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="chinese-chk" disabled>
+										<span class="text">Spring roll</span>
+									</label>
+								</li>
+							</ul>
+						</div>
+
+						<div class="btn-area">
+							<button type="button" class="btn-menu-select btn-ok" disabled>OK</button>
+						</div>
+
+					</div>
+					<!-- //Chinese -->
+		
+					<!-- Korean -->
+					<div class="tab-cont" id="tabCont0103">
+
+						<div class="scroll-box">
+							<ul class="menu-chk-list">
+								<li>
+									<label>
+										<input type="radio" name="korean-chk" class="menuChk05">
+										<span class="text chicken-stew">Chicken stew</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="korean-chk" class="menuChk06">
+										<span class="text bibimbob">Bibimbob</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="korean-chk" disabled>
+										<span class="text">Kimchi fried rice</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="korean-chk" disabled>
+										<span class="text">Bulgogi</span>
+									</label>
+								</li>
+								<li>
+									<label>
+										<input type="radio" name="korean-chk" disabled>
+										<span class="text">Cold noodle</span>
+									</label>
+								</li>
+							</ul>
+						</div>
+
+						<div class="btn-area">
+							<button type="button" class="btn-menu-select btn-ok" disabled>OK</button>
+						</div>
+
+					</div>
+					<!-- //Korean -->
+		
+				</div>
+				<!-- //tab wrap -->
+
+				<script type="text/javascript">
+					tabActive('tabActive01');
+				</script>
+
+				<!-- popup content -->
+
+			</div>
+			<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+		</div>
+	</div>
+
+	<script>
+		var menuRadio = $('.menu-chk-list').find('input[type=radio]');
+		menuRadio.each(function(){
+			$(this).on('click', function(){
+				var checkedLength = $(this).parents('.menu-chk-list').find('input[type=radio]:checked').length;
+				if(checkedLength != 0){
+					$(this).parents('.tab-cont').find('.btn-ok').removeAttr('disabled');
+				}
+			});
+		});
+
+		var btnMenuSelect = $('.btn-menu-select');
+		btnMenuSelect.each(function(){
+			$(this).on('click', function(){
+				var chkId = $(this).parents('.tab-cont').find('input[type=radio]:checked').attr('class').replace('menuChk','');
+				$('.default-kcal').hide();
+				$('#dinnerMenu' + chkId).show().addClass('menu-on');
+				$('.ly-popup.menu-select').closest('.ly-wrap').hide();
+				setTimeout(function(){
+					var funcId = 'pieDinner' + chkId;
+					eval(funcId + '()');
+				});
+			});
+		});
+	</script>
+</div>
+<!-- //layer : menu select -->
+
+<!-- layer : food diary -->
+<div class="ly-wrap">
+	<div class="ly-popup red" id="lyFoodDiary">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<strong class="tit-type user-name txt-orange" name="changeName">Sam</strong>
+				<p>is using the Food diary app(Domain Chain service) in OASISBloc’s food chain to improve diet.</p>
+				<p class="mt10">The breakfast and lunch menu is registered. Let's register the dinner menu by clicking the "Dinner" button.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this);if($('.step-ready').is(':visible')){pieDefault2();}">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : food diary -->
+
+<!-- layer : diabetes diary -->
+<div class="ly-wrap">
+	<div class="ly-popup red" id="lyDiabetesDiary">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Data can be collected through other Domain Chains with the same process above.</p>
+				<p class="mt10"><strong class="user-name">Carol</strong> uses the blood glucose management app which is OASISBloc's Health Chain App.<br>
+				The blood glucose management app collects <strong class="user-name">Carol's</strong> blood glucose data through blood glucose checking machine and IoT devices.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : diabetes diary -->
+
+<!-- layer : diabetes diary -->
+<div class="ly-wrap">
+	<div class="ly-popup orange" id="lyRegistration">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Let's check if the data of <strong class="user-name txt-orange" name="changeName">Sam</strong> and Carol are securely stored without any counterfeit or modification.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : diabetes diary -->
+
+<!-- layer : distribution01 -->
+<div class="ly-wrap">
+	<div class="ly-popup blue" id="lyDistribution01">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Bob wants to launch a new business with data collected in OASISBloc.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : distribution01 -->
+
+<!-- layer : distribution02 -->
+<div class="ly-wrap">
+	<div class="ly-popup blue" id="lyDistribution02">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Bob can analyze and use the set data provided from the food diary to create new services to support health care.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : distribution02 -->
+
+<!-- layer : distribution03 -->
+<div class="ly-wrap">
+	<div class="ly-popup blue" id="lyDistribution03">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Bob want to launch a healthcare service that provides the recommended calorie, calorie intake, blood glucose and weight based on age, gender, and BMI index.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : distribution03 -->
+
+<!-- layer : distribution04 -->
+<div class="ly-wrap">
+	<div class="ly-popup blue" id="lyDistribution04">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Bob request to the marketplace for a data set of consumed calories, intake calories, and blood glucose that are collected daily, by gender, height, weight, and age.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : distribution04 -->
+
+<!-- layer : distribution05 -->
+<div class="ly-wrap">
+	<div class="ly-popup blue" id="lyDistribution05">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>App provider checks the above request and makes a dataset with the only relevant data, then upload the created dataset in the marketplace.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : distribution05 -->
+
+<!-- layer : service -->
+<div class="ly-wrap">
+	<div class="ly-popup yellow" id="lyService">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>Now let’s have a look at the new service Bob has created with the above data.</p>
+				<p class="mt10">Bob’s new healthcare service can analyze the data set collected by age and BMI index to provide recommendations for target weight, blood glucose, calories burned, calorie consumption, and weight goals.<br>
+				Bob can also convert the target goals into points to expose the target goals as a percentage of the achieved goals and encourage the achievement of the goal.</p>
+				<p class="mt10">If <strong class="user-name txt-orange" name="changeName">Sam</strong> signs up and provides his personal health data, he can receive personalized health information according to his health status.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : service -->
+
+<!-- layer : rewards -->
+<div class="ly-wrap">
+	<div class="ly-popup orange" id="lyRewards">
+		<div class="ly-inner">
+			<div class="pop-cont">
+				
+				<!-- popup content -->
+
+				<p>So far, you have seen how Bob uses the data provided by <strong class="user-name txt-orange" name="changeName">Sam</strong> and Carol to create a new healthcare service.<br>
+				Next, you can check the fair reward that <strong class="user-name txt-orange"><em name="changeName">Sam</em></strong> received.</p>
+
+				<!-- popup content -->
+
+			</div>
+
+			<div class="btn-area">
+				<a href="#n" class="btn-cls" onclick="popupClose(this)">close</a>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- //layer : rewards -->
+
+
+</body>
+</html>

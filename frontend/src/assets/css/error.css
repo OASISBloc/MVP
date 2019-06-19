@@ -1,0 +1,15 @@
+@charset "utf-8";
+
+/* error */
+.error{padding:50px 20px 50px;text-align:center;}
+.error .error-tit{height:200px;background:url(../img/bg_error.png) no-repeat center bottom;background-size:auto 200px;overflow:hidden;text-indent:-9999px;}
+.error .error-msg{margin-top:30px;font-size:20px;color:#666;}
+.error .btn-home{margin-top:50px;}
+.error .btn-home a{display:inline-block;min-width:220px;height:60px;padding:10px 20px 0;background:#1a1c21;border-radius:30px;font-size:28px;font-weight:500;color:#44cef6;box-sizing:border-box;}
+@media screen and (max-width:767px) {
+    .error{padding:30px 10px 20px;}
+    .error .error-tit{height:140px;background-size:auto 140px;}
+    .error .error-msg{margin-top:20px;font-size:16px;}
+    .error .btn-home{margin-top:30px;}
+    .error .btn-home a{min-width:140px;height:40px;padding:7px 20px 0;border-radius:20px;font-size:18px;font-weight:400;}
+}
