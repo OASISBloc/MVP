@@ -4,13 +4,13 @@
 
 ## run and build
   1. install
-    backend$ npm install
-		frontend$ npm install
+    >backend$ npm install
+		>frontend$ npm install
   2. vue build
-		frontend$ npm run build
+	  >frontend$ npm run build
   3. run server
-    backend$ npm ./bin/www
+    >backend$ npm ./bin/www
 	4. run
-		 http://localhost:3003
+		>http://localhost:3003
 	
 
