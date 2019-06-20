@@ -14,7 +14,7 @@
 
   3. run server
 
-    backend$ npm ./bin/www
+    backend$ npm start
 
   4. run
 
