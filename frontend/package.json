@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "v-file-upload": "^3.1.7",
     "vue": "^2.5.2",
     "vue-file-upload": "^0.1.12",
